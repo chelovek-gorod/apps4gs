@@ -11,10 +11,12 @@
       #addBtn {margin-left: 5%; float: left; width: 43%; height: 30px; opacity: 0.2; cursor: unset;}
       #clearBtn {margin-right: 5%; float: right; width: 42%; height: 30px; opacity: 0.2; cursor: unset;}
       #startBtn {margin: 5%; width: 90%; height: 45px; font-size: 16px; font-weight: bold; opacity: 0.2; cursor: unset;}
-      .shell {position: absolute; width: 100%; height: 100%; background-color: #aeaeae; opacity: 0.9;}
-      .progress-box {margin: 100% 20px; border-radius: 5px; overflow: hidden; background-color: #7d7d7d;}
+      #shell {position: absolute; width: 100%; height: 100%; background-color: #aeaeae; opacity: 0.9;}
+      #progress-box {margin: 100% 20px; border-radius: 5px; overflow: hidden; background-color: #7d7d7d;}
       #progress {background-color: #4598ee; width: 0%; height: 30px;}
-      .box-text {position: absolute; display: block; margin-top: -24px; font-size: 18px;}
+      #box-text {position: absolute; display: block; margin-top: -24px; font-size: 18px;}
+      .start-over {width: 90%; flex-grow: 3; margin: 5%; position: absolute; bottom:0; font-size: 18px;}
+      #overBtn {margin-top: 5%; width: 100%; height: 45px; font-size: 16px; font-weight: bold; cursor: pointer;}
     </style>
   </head>
   <body>
@@ -33,6 +35,7 @@
 
     const consolidateArr = [];
     let arrIncludes = 0;
+    let loading = false;
 
     let itemsListDiv = document.getElementById("itemsScrollbarDiv");
 
@@ -103,8 +106,9 @@
 
     function start() {
       let flexDiv = document.getElementsByClassName('flex')[0];
-      let shell = '<div class="shell"><div class="progress-box"><div id="progress"><div class="box-text">in progerss...</div></div></div></div>';
+      let shell = '<div id="shell"><div id="progress-box"><div id="progress"><div id="box-text">in progerss...</div></div></div></div>';
       flexDiv.innerHTML += shell;
+      loading = true;
       setTimeout(doProgress,300, 0, Math.floor(100/arrIncludes), document.getElementById('progress'));
       google.script.run.withSuccessHandler(endProgrss).startConsolidation(consolidateArr);
     }
@@ -113,6 +117,7 @@
       if (progress >= 100) {
         progress = 100;
         div.style.width = progress + '%';
+        loading = false;
       } else {
         let rr, to; // random range, time out
         if (progress < (100 - step * 2)) {
@@ -126,13 +131,21 @@
         progress += rr;
         console.log('PROGRESS: ' + progress + '/100 (step = ' + step + ', random range = ' + rr + ', timeout = ' + to + ')');
         div.style.width = progress + '%';
-        setTimeout(doProgress, to, progress, step, div);
+        if (loading) setTimeout(doProgress, to, progress, step, div);
       }
     }
 
     function endProgrss(responce) {
-      document.getElementById('progress').style.width = 100 + '%';
-      google.script.run.allDoneResponce(responce);
+      //document.getElementById('progress').style.width = 100 + '%';
+      loading = false;
+      document.getElementById('shell').style.backgroundColor = '#ffffff';
+      document.getElementById('shell').style.opacity = 1;
+      document.getElementById('shell').innerHTML = '<div class="start-over">sheets have been combined and put <br> in'
+        +' <a target="_blank" href ="' + responce.url + '">consolidated sheet</a>.<br><button id="overBtn" onclick="startOver();">Start over</button></div>';
+      google.script.run.allDoneResponce(responce.msg);
+    }
+
+    function startOver () {
       google.script.host.close();
     }
 
