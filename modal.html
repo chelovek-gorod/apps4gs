@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {margin: 0; padding: 0}
+      #flexPU {display: flex; flex-direction: column; height: 100vh;}
+      .headerPU {margin: 5% 0 0 5%; font-size: 20px; font-weight: bold;}
+      .scrollbarPU {width: 90%; flex-grow: 3; margin: 5%; background: #F5F5F5; overflow-y: scroll;}
+      .ss-added {padding-left: 20px; color: #909090;}
+      #addBtnPU {margin-left: 5%; float: left; width: 43%; height: 30px; opacity: 0.2; cursor: unset;}
+      #cancelPU {margin-right: 5%; float: right; width: 42%; height: 30px; opacity: 0.2; cursor: unset;}
+    </style>
+  </head>
+  <body>
+    <div id="flexPU">
+      <div class="headerPU">Spreadsheets:</div>
+      <div class="scrollbarPU"><div id="spreadsheetsScrollbarDiv"></div></div>
+      <div class="buttons">
+        <button id="addBtnPU" onclick="addPU();">Add</button>
+        <button id="cancelPU" onclick="closePU();">Cancel</button>
+      </div>
+    </div>
+  
+  <script>
+    'use strict';
+
+    const addBtnPU = document.getElementById("addBtnPU");
+    const cancelPU = document.getElementById("cancelPU");
+
+    let spreadsheetsArr = [];
+
+    window.onload = function () {
+      google.script.run.withSuccessHandler(function(data){
+        outputSpreadsheetNames(data);
+      })
+      .addSpraedsheetsList();
+    }
+
+    function outputSpreadsheetNames(data) {
+      let itemsListDiv = document.getElementById("spreadsheetsScrollbarDiv");
+      let nArr = data.names;
+      for (let i of data.files) {
+        if (~nArr.indexOf(i.name)) itemsListDiv.innerHTML += '<div class="ss-added">' + i.name + '</div>';
+        else itemsListDiv.innerHTML += `<div class="ss-toadd"><input type="checkbox" onchange="adss(this,'${i.id}','${i.name}');">${i.name}</div>`;
+      }
+      activateCancelPU();
+    }
+
+    function activateAddBtnPU() {
+      addBtnPU.style.opacity = 1;
+      addBtnPU.style.cursor = 'pointer';
+    }
+    function deactivateAddBtnPU() {
+      addBtnPU.style.opacity = 0.2;
+      addBtnPU.style.cursor = 'unset';
+    }
+    function activateCancelPU() {
+      cancelPU.style.opacity = 1;
+      cancelPU.cursor = 'pointer';
+    }
+
+    function adss(e,eId,eName) {
+      if (e.checked) {
+        if (spreadsheetsArr.findIndex(i => i.id === eId) === -1) spreadsheetsArr.push({id:eId,name:eName});
+      } else {
+        let ind = (spreadsheetsArr.findIndex(i => i.id === eId));
+        if (ind !== -1) spreadsheetsArr.splice(ind, 1);
+      }
+      if (spreadsheetsArr.length > 0) activateAddBtnPU();
+      else deactivateAddBtnPU();
+    }
+
+    function addPU() {
+      if (addBtnPU.style.cursor === 'pointer') {
+        let html = '<div style="text-align: center; height: 100%; line-height: 350px; font-size: 20px;">Wait...</div>';
+        document.getElementById("flexPU").innerHTML = html;
+        google.script.run.withSuccessHandler(closePU).apdateCache(spreadsheetsArr);
+      }
+    }
+
+    function closePU() {
+      google.script.host.close();
+    }
+
+  </script>
+
+  </body>
+</html>
