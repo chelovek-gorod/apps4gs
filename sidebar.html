@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {margin: 0; padding: 0}
+      .flex {display: flex; flex-direction: column; height: 100vh;}
+      .header {margin: 5% 0 0 5%; font-size: 20px; font-weight: bold;}
+      .scrollbar {width: 90%; flex-grow: 3; margin: 5%; background: #F5F5F5; overflow-y: scroll;}
+      .ss-item {font-weight: bold;}
+      #addBtn {margin-left: 5%; float: left; width: 43%; height: 30px; opacity: 0.2; cursor: unset;}
+      #clearBtn {margin-right: 5%; float: right; width: 42%; height: 30px; opacity: 0.2; cursor: unset;}
+      #startBtn {margin: 5%; width: 90%; height: 45px; font-size: 16px; font-weight: bold; opacity: 0.2; cursor: unset;}
+      .shell {position: absolute; width: 100%; height: 100%; background-color: #aeaeae; opacity: 0.9;}
+      .progress-box {margin: 100% 20px; border-radius: 5px; overflow: hidden; background-color: #7d7d7d;}
+      #progress {background-color: #4598ee; width: 0%; height: 30px;}
+      .box-text {position: absolute; display: block; margin-top: -24px; font-size: 18px;}
+    </style>
+  </head>
+  <body>
+    <div class="flex">
+      <div class="header">Sheets:</div>
+      <div class="scrollbar"><div id="itemsScrollbarDiv"></div></div>
+      <div class="buttons">
+        <button id="addBtn" onclick="add();">Add spreadsheet</button>
+        <button id="clearBtn" onclick="clearAll();">Clear list</button>
+        <button id="startBtn" onclick="start();">Consolidate sheets</button>
+      </div>
+    </div>
+  
+  <script>
+    'use strict';
+
+    const consolidateArr = [];
+    let arrIncludes = 0;
+
+    let itemsListDiv = document.getElementById("itemsScrollbarDiv");
+
+    const addBtn = document.getElementById("addBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const startBtn = document.getElementById("startBtn");
+
+    window.onload = function () {
+      google.script.run.withSuccessHandler(function(data){
+        addItems(data);
+      })
+      .getSheetsArr();
+    }
+
+    function addItems(items) {
+      for (let item of items) consolidateArr.push(item);
+      for (let obj of consolidateArr) {
+        itemsListDiv.innerHTML += '<div class="ss-item">' + obj.ss + '</div>';
+        for (let i of obj.si) {
+          itemsListDiv.innerHTML += `<div class="s-item"><input type="checkbox" checked onchange="checkItem(this,'${i}','${obj.id}');">${i}</div>`;
+          arrIncludes++;
+        }
+        itemsListDiv.innerHTML += '<br>';
+      }
+      activateBtnAdd();
+      activateBtnClear();
+      if (arrIncludes > 1) activateBtnStart();
+    }
+
+    function checkItem(e, eName, eId) {
+      let ind = consolidateArr.findIndex(i => i.id === eId);
+      if (e.checked) {
+        consolidateArr[ind].si.push(eName);
+        arrIncludes++;
+      }
+      else {
+        let x = consolidateArr[ind].si.indexOf(eName);
+        if (x !== -1) {
+          consolidateArr[ind].si.splice(x, 1);
+          arrIncludes--;
+        }
+      }
+      if (consolidateArr.length > 0) activateBtnClear();
+      if (arrIncludes > 1) activateBtnStart();
+      else deactivateBtnStart();
+    }
+
+    function activateBtnAdd() {
+      addBtn.style.opacity = 1;
+      addBtn.style.cursor = 'pointer';
+    }
+    function activateBtnClear() {
+      clearBtn.style.opacity = 1;
+      clearBtn.cursor = 'pointer';
+    }
+    function deactivateBtnClear() {
+      clearBtn.style.opacity = 0.2;
+      clearBtn.cursor = 'unset';
+    }
+    function activateBtnStart() {
+      startBtn.style.opacity = 1;
+      startBtn.cursor = 'pointer';
+    }
+    function deactivateBtnStart() {
+      startBtn.style.opacity = 0.2;
+      startBtn.cursor = 'unset';
+    }
+
+    function start() {
+      let flexDiv = document.getElementsByClassName('flex')[0];
+      let shell = '<div class="shell"><div class="progress-box"><div id="progress"><div class="box-text">in progerss...</div></div></div></div>';
+      flexDiv.innerHTML += shell;
+      setTimeout(doProgress,300, 0, Math.floor(100/arrIncludes), document.getElementById('progress'));
+      google.script.run.withSuccessHandler(endProgrss).startConsolidation(consolidateArr);
+    }
+
+    function doProgress(progress, step, div) {
+      if (progress >= 100) {
+        progress = 100;
+        div.style.width = progress + '%';
+      } else {
+        let rr, to; // random range, time out
+        if (progress < (100 - step * 2)) {
+          rr = Math.floor(Math.random() * step);
+          to = Math.ceil(Math.random() * rr) * 100;
+        }
+        else {
+          rr = Math.ceil(Math.random() * (100 - progress) / 2);
+          to = Math.ceil(Math.random() * rr) * 300;
+        }
+        progress += rr;
+        console.log('PROGRESS: ' + progress + '/100 (step = ' + step + ', random range = ' + rr + ', timeout = ' + to + ')');
+        div.style.width = progress + '%';
+        setTimeout(doProgress, to, progress, step, div);
+      }
+    }
+
+    function endProgrss(responce) {
+      document.getElementById('progress').style.width = 100 + '%';
+      google.script.run.allDoneResponce(responce);
+      google.script.host.close();
+    }
+
+    function add() {
+      google.script.run.showModal();
+    }
+
+    function clearAll() {
+      if (clearBtn.cursor === 'pointer') {
+        itemsListDiv.innerHTML = '';
+        deactivateBtnClear();
+        deactivateBtnStart();
+        consolidateArr.length = 0;
+        arrIncludes = 0;
+        google.script.run.resetCache();
+      }
+    }
+
+  </script>
+
+  </body>
+</html>
