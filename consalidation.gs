@@ -61,11 +61,17 @@ function startConsolidation(arrSheetsIn) {
   }
   fillResult();
   // ui.alert('All done! \n Just in ' + (new Date() - scriptStartTime)/1000 + 'seconds');
-  return 'All done! \n Just in ' + (new Date() - scriptStartTime)/1000 + 'seconds';
+  return {msg: 'All done! \n Just in ' + (new Date() - scriptStartTime)/1000 + 'seconds', url: getSheetUrl()};
 }
 
 function allDoneResponce(responce) {
   ui.alert(responce);
+}
+
+function getSheetUrl() {
+  let url = assApp.getUrl() + '#gid=' + assApp.getSheetId();
+  //let url = assApp.getUrl();
+  return url;
 }
 
 function getName(s) {
